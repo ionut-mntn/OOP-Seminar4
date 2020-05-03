@@ -1,6 +1,7 @@
 #include <vector>
 #include "Auto.h"
 #include <iostream>
+#include "Person.h"
 
 using namespace std;
 
@@ -44,6 +45,8 @@ public:
 };
 
 class AutoInMemoryRepository : public CrudRepository<Auto> {
+
+	friend class AutoController;
 
 private:
 	vector<Auto> vehicles;
@@ -129,6 +132,11 @@ public:
 
 	}
 
+	int size() {
+
+		return vehicles.size();
+	}
+
 	
 
 
@@ -138,39 +146,129 @@ class AutoController {
 
 private:
 
-	AutoInMemoryRepository repo;
+	static AutoController* instance;
 
-public:
+	AutoInMemoryRepository* repo;
 
-	AutoController(AutoInMemoryRepository repo) {
+
+
+	AutoController(AutoInMemoryRepository *repo) {
 
 		this->repo = repo;
 
 	}
 
+public:
+
+	static AutoController* getInstance(AutoInMemoryRepository *repo) {
+		
+		if (instance == NULL) {
+			instance = new AutoController(repo);
+		}
+		return instance;
+
+	}
+
 	Auto findAutoById(int id) {
 
-		return repo.findOne(id);
+		return repo->findOne(id);
 	}
 
 	vector<Auto> findAll() {
 
-		return repo.findAll();
+		return repo->findAll();
 	}
 
 	void saveAuto(Auto a) {
-		repo.save(a);
+		repo->save(a);
 	}
 
 	Auto updateAuto(Auto a) {
-		return repo.update(a);
+		return repo->update(a);
+	}
+
+	void sortAutos() {
+
+		std::vector<Auto> autos = repo->findAll();
+
+		for (int i = 0; i < autos.size()-1; i++)
+		{
+			for (int j = 0; j < autos.size() - i - 1; j++) {
+
+				if (autos[j].getMarke() > autos[j+1].getMarke()) {
+					Auto aux = autos[j];
+					autos[j] = autos[j+1];
+					autos[j + 1] = aux;
+				}
+				
+			}
+		}
+
+		repo->vehicles = autos;
+
+
 	}
 
 	void deleteAuto(int id) {
-		repo.del(id);
+		repo->del(id);
 	}
 
 
+};
+AutoController* AutoController::instance = 0;
+
+
+class Reservierung {
+
+private:
+	Person person;
+	Auto car;
+	int numberOfDays;
+
+public:
+
+	Reservierung(Person pers, Auto newCar, int nrOfDays) {
+		numberOfDays = nrOfDays;
+		person = pers;
+		car = newCar;
+
+	}
+
+	Person getPerson() {
+		return person;
+	}
+	Auto getAuto() {
+		return car;
+	}
+	int getDays() {
+		return numberOfDays;
+	}
+
+	void setPerson(Person pers) {
+		person = pers;
+	}
+	void setAuto(Auto newAuto) {
+		car = newAuto;
+	}
+	void setDays(int newDays) {
+		numberOfDays = newDays;
+	}
+
+
+};
+
+class Rent {
+
+public:
+	std::vector<Reservierung> reservierungen;
+
+	Rent() {
+		reservierungen.clear();
+	}
+
+	void reserve_auto(Auto car, Person pers, int nrDays) {
+		reservierungen.push_back(Reservierung(pers, car, nrDays));
+	}
 };
 
 class UI {
@@ -184,12 +282,12 @@ public:
 		mainRepo.save(Auto(3, "Carriage", "Wooden"));
 		mainRepo.save(Auto(4, "Audi", "A1"));
 
-		AutoController controller = AutoController(mainRepo);
+		AutoController* controller = AutoController::getInstance(&mainRepo);
 
 		bool quitProgram = false;
 
 
-		std::string menuText = "\n1. Find car by id\n2. Show all cars\n3. Delete car by id\n4. Save car\n0. Exit program";
+		std::string menuText = "\n1. Find car by id\n2. Show all cars\n3. Delete car by id\n4. Save car\n5. Sort cars\n0. Exit program";
 
 		//Main loop of the program
 		while (!quitProgram) {
@@ -238,14 +336,14 @@ public:
 
 				}
 
-				Auto car = controller.findAutoById(id);
+				Auto car = controller->findAutoById(id);
 				cout << endl << car.getMarke() << " "<< car.getModell();
 
 				break;
 			}
 			case 2:
 			{
-				vector<Auto> list = controller.findAll();
+				vector<Auto> list = controller->findAll();
 
 				for (int i = 0; i < list.size(); i++)
 				{
@@ -277,7 +375,7 @@ public:
 
 				}
 
-				controller.deleteAuto(id);
+				controller->deleteAuto(id);
 				
 				break;
 
@@ -294,10 +392,16 @@ public:
 				cout << "\nModell: ";
 				cin >> model;
 
-				id = controller.findAll().back().getId() + 1;
+				id = controller->findAll().back().getId() + 1;
 
-				controller.saveAuto(Auto(id, marke, model));
+				controller->saveAuto(Auto(id, marke, model));
 
+
+				break;
+			}
+			case 5:
+			{
+				controller->sortAutos();
 
 				break;
 			}

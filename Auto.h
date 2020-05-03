@@ -10,7 +10,7 @@ protected:
 	std::string modell;
 
 public:
-
+	Auto();
 	Auto(int newId, std::string newMarke, std::string newModell);
 
 	int getId();

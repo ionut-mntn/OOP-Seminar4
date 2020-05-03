@@ -9,6 +9,13 @@ Auto::Auto(int newId, std::string newMarke, std::string newModell) {
 
 }
 
+Auto::Auto() {
+	id = NULL;
+	marke = "";
+	modell = "";
+
+}
+
 int Auto::getId() {
 	
 	return this->id;
